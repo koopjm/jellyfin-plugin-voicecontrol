@@ -1,0 +1,67 @@
+name: Build and Release Plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Plugin version (e.g. 1.0.0.0)'
+        required: true
+        default: '1.0.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Checkout Jellyfin v12.4
+        uses: actions/checkout@v4
+        with:
+          repository: jellyfin/jellyfin
+          ref: v12.4
+          depth: 1
+          path: jellyfin
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish Plugin
+        run: |
+          dotnet publish "plugin/Jellyfin.Plugin.VoiceControl.csproj" -c Release -o dist \
+            -p:JellyfinRepoDir="$GITHUB_WORKSPACE/jellyfin" \
+            -p:Version="${{ inputs.version }}" \
+            -p:DebugType=None -p:DebugSymbols=false
+          find dist -maxdepth 1 -type f \
+            ! -name "Jellyfin.Plugin.*.dll" \
+            ! -name "MetadataExtractor.dll" \
+            ! -name "XmpCore.dll" \
+            ! -name "Whisper.net.dll" \
+            -delete
+          if [ -d "dist/runtimes" ]; then
+            find dist/runtimes -mindepth 1 -maxdepth 1 -type d ! -name "linux-x64" ! -name "noavx" -exec rm -rf {} +
+            if [ -d "dist/runtimes/noavx" ]; then
+              find dist/runtimes/noavx -mindepth 1 -maxdepth 1 -type d ! -name "linux-x64" -exec rm -rf {} +
+            fi
+            if [ -f "/usr/lib/x86_64-linux-gnu/libgomp.so.1" ]; then
+              cp -L "/usr/lib/x86_64-linux-gnu/libgomp.so.1" "dist/runtimes/linux-x64/libgomp.so.1"
+            fi
+          fi
+          cp "plugin/thumb.png" "dist/thumb.png"
+          cd dist && zip -qr "../Jellyfin.Plugin.VoiceControl_${{ inputs.version }}.zip" .
+          echo "MD5=$(md5sum "../Jellyfin.Plugin.VoiceControl_${{ inputs.version }}.zip" | awk '{print toupper($1)}')" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ inputs.version }}" "Jellyfin.Plugin.VoiceControl_${{ inputs.version }}.zip" \
+            --title "v${{ inputs.version }}" \
+            --notes "Release v${{ inputs.version }} for Jellyfin 12.4 (MD5: $(md5sum "Jellyfin.Plugin.VoiceControl_${{ inputs.version }}.zip" | awk '{print toupper($1)}'))"

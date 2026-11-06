@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Jellyfin.Plugin.VoiceControl</AssemblyName>
+    <RootNamespace>Jellyfin.Plugin.VoiceControl</RootNamespace>
+    <Version>1.0.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <JellyfinRepoDir Condition="'$(JellyfinRepoDir)' == ''">..\..\jellyfin</JellyfinRepoDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="$(JellyfinRepoDir)\MediaBrowser.Common\MediaBrowser.Common.csproj">
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </ProjectReference>
+    <ProjectReference Include="$(JellyfinRepoDir)\MediaBrowser.Controller\MediaBrowser.Controller.csproj">
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </ProjectReference>
+    <ProjectReference Include="$(JellyfinRepoDir)\MediaBrowser.Model\MediaBrowser.Model.csproj">
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Whisper.net" Version="1.7.4" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.7.4" />
+    <PackageReference Include="Whisper.net.Runtime.NoAvx" Version="1.7.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Web\voicecontrol.js" />
+  </ItemGroup>
+
+</Project>
+
